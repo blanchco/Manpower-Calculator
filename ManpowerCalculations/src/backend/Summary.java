@@ -52,22 +52,57 @@ public class Summary {
 		return indexList;
 	}
 	
+	public ArrayList<ErrorRow> getErrorRows(String job_id){
+		ArrayList<ErrorRow> error_rows_from_all_tables = new ArrayList<ErrorRow>();
+		ArrayList<Integer> tableIndexArray = getContainsJobIdIndexList(job_id);
+		for (int i = 0; i < tableIndexArray.size(); i++){
+			ArrayList<ErrorRow> er = getTable(tableIndexArray.get(i)).getErrorRows(job_id);
+			for (int j = 0; j < er.size(); j++){
+				er.get(j).setTableNumber(tableIndexArray.get(i) + 1);
+			}
+			error_rows_from_all_tables = combineErrorRows(error_rows_from_all_tables, er);
+			if (error_rows_from_all_tables.size() <= 0){
+				return null;
+			}
+			
+		}
 
-	//get the rows the match the job id from all tables and create an array of these row arrays
+		return error_rows_from_all_tables;
+	}
+	
+	public ArrayList<ErrorRow> getErrorRows(String job_id, int lowDate, int highDate){
+		ArrayList<ErrorRow> error_rows_from_all_tables = new ArrayList<ErrorRow>();
+		ArrayList<Integer> tableIndexArray = getContainsJobIdIndexList(job_id, lowDate, highDate);
+		for (int i = 0; i < tableIndexArray.size(); i++){
+			ArrayList<ErrorRow> er = getTable(tableIndexArray.get(i)).getErrorRows(job_id);
+			for (int j = 0; j < er.size(); j++){
+				er.get(j).setTableNumber(tableIndexArray.get(i) + 1);
+			}
+			error_rows_from_all_tables = combineErrorRows(error_rows_from_all_tables, er);
+		}
+		if (error_rows_from_all_tables.size() <= 0){
+			return null;
+		}
+		return error_rows_from_all_tables;
+	}
+	
+	
+
+	//get the rows that match the job id from all tables and create an array of these row arrays
 	public ArrayList<ArrayList<AggregateRow>> getMatchingAggregateRows(String job_id){
 		ArrayList<ArrayList<AggregateRow>> matching_rows_from_all_tables = new ArrayList<ArrayList<AggregateRow>>();
 		ArrayList<Integer> tableIndexArray = getContainsJobIdIndexList(job_id);
 		for (int i = 0; i < tableIndexArray.size(); i++){
-			matching_rows_from_all_tables.add(this.getTable(tableIndexArray.get(i)).getAggregateRows(job_id));
+			matching_rows_from_all_tables.add(getTable(tableIndexArray.get(i)).getAggregateRows(job_id));
 		}
 		return matching_rows_from_all_tables;
 	}
 	
 	public ArrayList<ArrayList<AggregateRow>> getMatchingAggregateRows(String job_id, int lowDate, int highDate){
 		ArrayList<ArrayList<AggregateRow>> matching_rows_from_all_tables = new ArrayList<ArrayList<AggregateRow>>();
-		ArrayList<Integer> tableIndexArray = this.getContainsJobIdIndexList(job_id, lowDate, highDate);
+		ArrayList<Integer> tableIndexArray = getContainsJobIdIndexList(job_id, lowDate, highDate);
 		for (int i = 0; i < tableIndexArray.size(); i++){
-			matching_rows_from_all_tables.add(this.getTable(tableIndexArray.get(i)).getAggregateRows(job_id));
+			matching_rows_from_all_tables.add(getTable(tableIndexArray.get(i)).getAggregateRows(job_id));
 		}
 		return matching_rows_from_all_tables;
 	}
@@ -103,6 +138,14 @@ public class Summary {
 		return ar1;
 	}
 	
+	public ArrayList<ErrorRow> combineErrorRows(ArrayList<ErrorRow> er1, ArrayList<ErrorRow> er2) {
+		for (int i = 0; i < er2.size(); i++){
+			er1.add(er2.get(i));
+		}
+		
+		return er1;
+	}
+	
 	//combine all aggregate rows into 1.
 	public ArrayList<AggregateRow> combineAllAggregateRows(String job_id){
 		ArrayList<ArrayList<AggregateRow>> matched_rows = getMatchingAggregateRows(job_id);
@@ -130,5 +173,20 @@ public class Summary {
 			return combinedRows;
 		}
 	}
+	
+	public Object[] getResults(String job_id){
+		Object[] results = new Object[2];
+		results[0] = combineAllAggregateRows(job_id);
+		results[1] = getErrorRows(job_id);
+		return results;
+	}
+	
+	public Object[] getResults(String job_id, int lowDate, int highDate){
+		Object[] results = new Object[2];
+		results[0] = combineAllAggregateRows(job_id, lowDate, highDate);
+		results[1] = getErrorRows(job_id, lowDate, highDate);
+		return results;
+	}
+	
 	
 }

@@ -1,21 +1,20 @@
 package backend;
 
 public class AggregateRow {
+	private double rate;
 	private String employee;
 	private double hours;
 	private double wage;
 	
 	public AggregateRow(double rate, String employee, double hours){
+		this.rate = rate;
 		this.employee = employee;
-		if (hours != -1){
-			this.hours = hours;
-		} else {
-			
-		}
-		
-		if (rate != -1){
-			this.wage = rate * this.hours;
-		}
+		this.hours = hours;
+		this.wage = this.rate * this.hours;
+	}
+	
+	public double getRate(){
+		return rate;
 	}
 	
 	public String getEmployee(){
@@ -40,6 +39,14 @@ public class AggregateRow {
 	
 	public boolean hasSameEmployee(AggregateRow ar){
 		if (!ar.getEmployee().equals(this.employee)){
+			return false;
+		} else {
+			return true;
+		}
+	}
+	
+	public boolean isValidated(AggregateRow ar){
+		if (ar.getRate() == -1 || ar.getHours() == -1){
 			return false;
 		} else {
 			return true;

@@ -5,6 +5,7 @@ import java.awt.Dimension;
 import java.awt.Event;
 import java.awt.GridBagConstraints;
 import java.io.File;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 
 import javax.swing.ButtonGroup;
@@ -23,6 +24,7 @@ import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 
 import backend.AggregateRow;
+import backend.ErrorRow;
 import backend.Summary;
 import backend.Table;
 import backend.Workable_data_functions;
@@ -74,7 +76,6 @@ public class Search_Job_Id_Panel extends JPanel implements ActionListener{
 	private ArrayList<String[]> raw_data;
 	private ArrayList<Table> raw_tables;
 	private Summary summary;
-	private ArrayList<AggregateRow> foundRows;
 	
 	/**
 	 * Create the panel.
@@ -232,8 +233,8 @@ public class Search_Job_Id_Panel extends JPanel implements ActionListener{
 	private JPanel setStatusPanel(JPanel statusPanel){
 		statusPanel = new JPanel();
 		statusPanel.setLayout(new BorderLayout());
-		resultsLabel = new JLabel("3 results found.");
-		statusLabel = new JLabel("Seaching...");
+		resultsLabel = new JLabel();
+		statusLabel = new JLabel("Ready.");
 		statusPanel.add(resultsLabel, BorderLayout.LINE_START);
 		statusPanel.add(statusLabel, BorderLayout.LINE_END);
 		return statusPanel;
@@ -256,6 +257,7 @@ public class Search_Job_Id_Panel extends JPanel implements ActionListener{
 	}
 
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public void actionPerformed(ActionEvent e) {
 		if (e.getSource() == addFileButton){
@@ -274,22 +276,56 @@ public class Search_Job_Id_Panel extends JPanel implements ActionListener{
 			}
 			
 		} else if (e.getSource() == searchButton){
+			resultsLabel.setText("0 results found.");
 			if(!fileField.getText().equals("")){
 				if (onlyJobIdButton.isSelected()){
 					model.setRowCount(0);
 					String job_id = jobIdTextField.getText();
-					foundRows = summary.combineAllAggregateRows(job_id);
-					if (foundRows != null)
+					Object[] results = summary.getResults(job_id);
+					ArrayList<AggregateRow> foundRows = (ArrayList<AggregateRow>) results[0];
+					ArrayList<ErrorRow> errors = (ArrayList<ErrorRow>) results[1];
+					
+					if (foundRows != null){
+						
+						
+						DecimalFormat df =  new DecimalFormat("#.00");
+						double totalHours = 0;
+						double totalWage = 0;
 						for (int i = 0; i < foundRows.size(); i++){
 							model.addRow(new Object[]{
 									foundRows.get(i).getEmployee(),
 									foundRows.get(i).getHours(),
-									foundRows.get(i).getWage()
+									"$" + df.format(foundRows.get(i).getWage())
 									});
+							totalHours += foundRows.get(i).getHours();
+							totalWage += foundRows.get(i).getWage();
+						}
+						model.addRow(new Object[]{
+								"",
+								"",
+								""
+						});
+						model.addRow(new Object[]{
+								"Total",
+								totalHours,
+								"$" + df.format(totalWage)
+						});
+						resultsLabel.setText(displayTable.getRowCount() - 2 + " results found.");
+						
+						if (errors != null){
+							String allErrorMessages = "";
+							for (int i = 0; i < errors.size(); i++){
+								allErrorMessages += errors.get(i).getErrorMessage();
+							}
+							JOptionPane.showMessageDialog(null, allErrorMessages);
+						}
+						
+							
 					} else {
 						JOptionPane.showMessageDialog(null, "Job id: " + jobIdTextField.getText() + " not found.");
 					}
 				} else if (weekRangeButton.isSelected()){
+					
 					String job_id = jobIdTextField.getText();
 					try {
 						int lowDate = Integer.parseInt(lowWeek.getText());
@@ -301,15 +337,45 @@ public class Search_Job_Id_Panel extends JPanel implements ActionListener{
 								JOptionPane.showMessageDialog(null, "Second week number too high, there are only " + summary.getSize() + " weeks in the selected file.");
 							} else {
 								model.setRowCount(0);
-								foundRows = summary.combineAllAggregateRows(job_id, lowDate, highDate);
+								Object[] results = summary.getResults(job_id, lowDate, highDate);
+								ArrayList<AggregateRow> foundRows = (ArrayList<AggregateRow>) results[0];
+								ArrayList<ErrorRow> errors = (ArrayList<ErrorRow>) results[1];
 								if (foundRows != null){
+									
+									
+									DecimalFormat df =  new DecimalFormat("#.00");
+									double totalHours = 0;
+									double totalWage = 0;
 									for (int i = 0; i < foundRows.size(); i++){
 										model.addRow(new Object[]{
 												foundRows.get(i).getEmployee(),
 												foundRows.get(i).getHours(),
-												foundRows.get(i).getWage()
+												"$" + df.format(foundRows.get(i).getWage())
 												});
+										totalHours += foundRows.get(i).getHours();
+										totalWage += foundRows.get(i).getWage();
 									}
+									model.addRow(new Object[]{
+											"",
+											"",
+											""
+									});
+									model.addRow(new Object[]{
+											"Total",
+											totalHours,
+											"$" + df.format(totalWage)
+									});
+									resultsLabel.setText(displayTable.getRowCount() - 2 + " results found.");
+									
+									if (errors != null){
+										String allErrorMessages = "";
+										for (int i = 0; i < errors.size(); i++){
+											allErrorMessages += errors.get(i).getErrorMessage();
+										}
+										JOptionPane.showMessageDialog(null, allErrorMessages);
+										
+									}
+									
 								} else {
 									JOptionPane.showMessageDialog(null, "Job id: " + jobIdTextField.getText() + " not found between weeks "
 																	+ lowWeek.getText() + " and " + highWeek.getText() + ".");

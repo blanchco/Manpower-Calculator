@@ -149,6 +149,13 @@ public class Table {
 		return hours;
 	}
 	
+	public String getEmployeeHoursAsString(String job_id, int rowIndex){
+		int jobIdIndex = getJobIdIndex(job_id);
+		String[] job_hours_column = getJobHoursColumn(jobIdIndex);
+		String hours = job_hours_column[rowIndex];	
+		return hours;
+	}
+	
 	
 	//searches job id column to see what indicies have hours worked and returns the index array
 	public ArrayList<Integer> getEmployeesOnJobIndex(String job_id){
@@ -156,11 +163,17 @@ public class Table {
 		int jobIdIndex = getJobIdIndex(job_id);
 		String[] job_hours_column = getJobHoursColumn(jobIdIndex);
 		for(int i = 1; i < job_hours_column.length; i++){
+			boolean isHoursADouble = false;
 			try{
 				Double.parseDouble(job_hours_column[i]);
+				isHoursADouble = true;
+				Double.parseDouble(rates[i]);
 				employee_indicies.add(i);
 			} catch (NumberFormatException nfe){
 				
+				if (!job_hours_column[i].equals("") || isHoursADouble){
+					employee_indicies.add(-i);
+				}
 			}
 		}
 		return employee_indicies;
@@ -171,9 +184,22 @@ public class Table {
 		ArrayList<AggregateRow> rowsOnJob = new ArrayList<AggregateRow>();
 		ArrayList<Integer> indiciesOnJob = this.getEmployeesOnJobIndex(job_id);
 		for (int i = 0; i < indiciesOnJob.size(); i++){
-			rowsOnJob.add(createAggregateRow(job_id, indiciesOnJob.get(i)));
+			if (!(indiciesOnJob.get(i) < 0)){
+				rowsOnJob.add(createAggregateRow(job_id, indiciesOnJob.get(i)));
+			}
 		}
 		return rowsOnJob;
+	}
+	
+	public ArrayList<ErrorRow> getErrorRows(String job_id){
+		ArrayList<ErrorRow> errorRows = new ArrayList<ErrorRow>();
+		ArrayList<Integer> indiciesOnJob = this.getEmployeesOnJobIndex(job_id);
+		for (int i = 0; i < indiciesOnJob.size(); i++){
+			if (indiciesOnJob.get(i) < 0){
+				errorRows.add(createErrorRow(job_id, -indiciesOnJob.get(i)));
+			}
+		}
+		return errorRows;
 	}
 	
 
@@ -210,24 +236,22 @@ public class Table {
 	
 	public AggregateRow createAggregateRow(String job_id, int rowIndex){
 		
-		double rate;
-		try {
-			rate = Double.parseDouble(rates[rowIndex]);
-		} catch (NumberFormatException nfe){
-			rate = -1;
-		}
+		double rate = Double.parseDouble(rates[rowIndex]);
 		String employee = employees[rowIndex];
-		
-		double hours;
-		try{
-			hours= getEmployeeHours(job_id, rowIndex);
-		} catch (NumberFormatException nfe){
-			hours = -1;
-		}
-		
-		
+		double hours= getEmployeeHours(job_id, rowIndex);
+			
 		AggregateRow createdRow = new AggregateRow(rate, employee, hours);
 		return createdRow;
+	}
+	
+	public ErrorRow createErrorRow(String job_id, int rowIndex){
+		String rate = rates[rowIndex];
+		String employee = employees[rowIndex];
+		String hours = getEmployeeHoursAsString(job_id, rowIndex);
+		
+		ErrorRow errorRow  = new ErrorRow(employee, rate, hours);
+		return errorRow;
+		
 	}
 	
 }
